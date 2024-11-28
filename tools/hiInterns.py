@@ -1,12 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 
-from tools import convert_date
+from .tools import convert_date
 
 url = "https://hi-interns.com/internships?facets=%5B%22Company.City%22%2C%22Keywords.Value%22%5D&facetFilters=%5B%5D"
 
 
-def get_number_of_pages(url):
+def get_number_of_pages():
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
     number_pages = soup.find_all(
@@ -14,6 +14,13 @@ def get_number_of_pages(url):
         class_="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-gray-500 hover:text-indigo-900",
     )[-2].text
     return int(number_pages)
+
+
+def get_latest_post():
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    post = soup.find("section", class_="relative overflow-clip")
+    return post
 
 
 def get_posts_links(url):
@@ -34,9 +41,10 @@ def get_post_content(link):
     return content
 
 
-def get_all_data(url, old_links=[]):
-    n = get_number_of_pages(url)
-    for i in range(1, n):
+def get_all_data(old_links=[]):
+    n = get_number_of_pages()
+    # for i in range(n):
+    for i in range(3):
         if i == 0:
             page_url = url
         else:
@@ -46,16 +54,15 @@ def get_all_data(url, old_links=[]):
         links += get_posts_links(page_url)
         for link in links:
             if link in old_links:
-                return data
+                return data, old_links
             data[link] = get_post_content(link)
-        return data
+            old_links.insert(0, link)
+        return data, old_links
 
 
 def get_post_detail(content):
     details = {}
-    details["company"] = content.find(
-        "p", class_="text-center text-xl font-bold"
-    ).text
+    details["company"] = content.find("p", class_="text-center text-xl font-bold").text
     details["workplace"] = content.find(
         "div", class_="flex flex-wrap justify-center gap-4"
     ).text.strip()

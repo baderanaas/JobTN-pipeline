@@ -3,17 +3,26 @@ import requests
 from bs4 import BeautifulSoup
 
 
-from tools import convert_date
+from .tools import convert_date
 
-url = "https://www.keepjob.com"
+url = "https://www.keejob.com"
 
 
-def get_number_of_pages(url):
-    response = requests.get(url)
+def get_number_of_pages():
+    response = requests.get(url + "/offres-emploi/")
     soup = BeautifulSoup(response.text, "html.parser")
     pages = soup.find_all("li", class_="page-item")
     page_number = pages[3].find("a")["aria-label"].split()[-1]
     return int(page_number)
+
+
+def get_latest_post():
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    post = soup.select_one(
+        "div.block_white_a.post.clearfix.silver-job-block > div.content.row-fluid > div.span8"
+    )
+    return post
 
 
 def get_posts_links(url):
@@ -34,18 +43,20 @@ def get_post_content(link):
     return content
 
 
-def get_all_data(url, old_links=[]):
+def get_all_data(old_links=[]):
     links = []
     data = {}
-    n = get_number_of_pages(url + "/offres-emploi/")
-    for i in range(1, n + 1):
-        page_url = f"{url}/page/{i}"
-        links += get_posts_links(page_url, old_links)
+    n = get_number_of_pages()
+    # for i in range(1, n + 1):
+    for i in range(1, 4):
+        page_url = f"{url}/offres-emploi/?page/{i}"
+        links += get_posts_links(page_url)
         for link in links:
             if link in old_links:
-                return data
+                return data, old_links
             data[link] = get_post_content(url + link)
-    return data
+            old_links.insert(0, link)
+    return data, old_links
 
 
 def get_post_details(content):

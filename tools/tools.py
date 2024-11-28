@@ -18,7 +18,7 @@ def convert_date(date):
         "novembre": "11",
         "décembre": "12",
     }
-    date = re.sub(r"[^a-z0-9]", "", date.lower())
+    date = re.sub(r"[^a-z0-9 ]", "", date.lower())
     day, month, year = date.split()
     date = f"{year}-{months[month]}-{day}"
     return (datetime.strptime(date, "%Y-%m-%d") + relativedelta(months=1)).strftime(
