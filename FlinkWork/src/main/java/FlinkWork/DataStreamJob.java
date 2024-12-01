@@ -155,8 +155,8 @@ public class DataStreamJob {
 		)).name("Create Farojob Table Sink");
 
 		streamFarojob.addSink(JdbcSink.sink(
-				"INSERT INTO farojob (link, body) " +
-						"VALUES (?, ?) " +
+				"INSERT INTO farojob (link, body, date) " +
+						"VALUES (?, ?, ?) " +
 						"ON CONFLICT (link) DO UPDATE SET " +
 						"body = EXCLUDED.body," +
 						"date = EXCLUDED.date"
