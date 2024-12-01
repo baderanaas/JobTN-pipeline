@@ -10,7 +10,7 @@ import tools.optionCarriere as optionCarriere
 
 # connection = psycopg2.connect(
 #     host="localhost",
-#     database="job_board",
+#     database="jobs",
 #     user="postgres",
 #     password="postgres",
 #     port="6543",
@@ -111,7 +111,7 @@ def main():
                     "farojob",
                     key=link,
                     value=json.dumps(
-                        {"link": link, "body": str(body[0]), "date": body[1]}
+                        {"link": link, "body": str(body[0]), "date": str(body[1])}
                     ),
                     on_delivery=delivery_report,
                 )
