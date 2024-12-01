@@ -51,7 +51,7 @@ def get_all_data(old_links=[]):
             page_url = f"{url}&page={i}"
         links = []
         data = {}
-        links += get_posts_links(page_url)
+        links = get_posts_links(page_url)
         for link in links:
             if link in old_links:
                 return data, old_links
@@ -61,6 +61,7 @@ def get_all_data(old_links=[]):
 
 
 def get_post_detail(content):
+    content = BeautifulSoup(content, "html.parser")
     details = {}
     details["company"] = content.find("p", class_="text-center text-xl font-bold").text
     details["workplace"] = content.find(

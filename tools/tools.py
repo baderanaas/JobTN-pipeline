@@ -24,3 +24,23 @@ def convert_date(date):
     return (datetime.strptime(date, "%Y-%m-%d") + relativedelta(months=1)).strftime(
         "%Y-%m-%d"
     )
+
+
+def format_date(date):
+    value = int(re.sub(r"[^0-9]", "", date))
+    now = datetime.now()
+
+    if "jour" in date:
+        new_date = now - relativedelta(days=value)
+    elif "mois" in date:
+        new_date = now - relativedelta(months=value)
+    elif "heure" in date:
+        new_date = now - relativedelta(hours=value)
+    elif "min" in date:
+        new_date = now - relativedelta(minutes=value)
+    else:
+        new_date = now
+
+    new_date_plus_month = new_date + relativedelta(months=1)
+
+    return new_date_plus_month.strftime("%Y-%m-%d")

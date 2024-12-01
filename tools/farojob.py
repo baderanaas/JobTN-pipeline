@@ -32,8 +32,8 @@ def get_post_content(link):
     soup = BeautifulSoup(response.text, "html.parser")
     content = soup.find("div", class_="job-desc")
     post_date = soup.find("span", class_="job-date__posted").text
-    post_date = convert_date(post_date)
-    return [content, post_date]
+    expiration_date = convert_date(post_date)
+    return [content, expiration_date]
 
 
 def get_all_data(old_links=[]):
@@ -43,7 +43,7 @@ def get_all_data(old_links=[]):
         page_url = f"{url}{i+1}"
         links = []
         data = {}
-        links += get_posts_links(page_url)
+        links = get_posts_links(page_url)
         for link in links:
             if link in old_links:
                 return data, old_links
@@ -53,6 +53,7 @@ def get_all_data(old_links=[]):
 
 
 def get_post_details(content):
+    content = BeautifulSoup(content, "html.parser")
     paragraphs = content.find_all("p")
     post = {}
     post["company"] = " ".join(paragraphs[0].text.split()[:-1])
