@@ -164,7 +164,7 @@ public class DataStreamJob {
 				(JdbcStatementBuilder<Farojob>) (preparedStatement, farojob) -> {
 					preparedStatement.setString(1, farojob.getLink());
 					preparedStatement.setString(2, farojob.getBody());
-					preparedStatement.setString(3, farojob.getDate());
+					preparedStatement.setTimestamp(3, farojob.getDate());
 				},
 				execOptions,
 				connOptions

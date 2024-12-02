@@ -129,10 +129,10 @@ services:
     environment:
       - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeeper-debezium:2182
       - SCHEMA_REGISTRY_HOST_NAME=schema-registry
-      - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081,http://localhost:8081
+      - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8088,http://localhost:8088
       - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://broker-debezium:9094
     ports:
-      - 8081:8081
+      - 8088:8088
     depends_on: 
       - zookeeper-debezium
       - broker-debezium

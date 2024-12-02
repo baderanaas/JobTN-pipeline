@@ -9,5 +9,5 @@ import java.util.List;
 public class Farojob {
     private String link;
     private String body;
-    private String date;
+    private Timestamp date;
 }

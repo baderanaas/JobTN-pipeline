@@ -22,7 +22,7 @@ def convert_date(date):
     day, month, year = date.split()
     date = f"{year}-{months[month]}-{day}"
     return (datetime.strptime(date, "%Y-%m-%d") + relativedelta(months=1)).strftime(
-        "%Y-%m-%d"
+        "%Y-%m-%dT%H:%M:%S.%f%z"
     )
 
 
@@ -43,4 +43,4 @@ def format_date(date):
 
     new_date_plus_month = new_date + relativedelta(months=1)
 
-    return new_date_plus_month.strftime("%Y-%m-%d")
+    return new_date_plus_month.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
