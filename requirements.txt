@@ -1,7 +1,11 @@
 requests
 beautifulsoup4
-selenium
 confluent_kafka
 kafka-python
 psycopg2 
 psycopg2-binary
+pyspark==3.4.0
+python-dateutil
+pandas
+pyarrow
+numpy

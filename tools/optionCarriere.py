@@ -49,7 +49,10 @@ def get_all_data(old_links=[]):
             if link in old_links:
                 return all_jobs, old_links
             try:
-                all_jobs[link] = get_post_content(link)
+                content = get_post_content(link)
+                details = get_post_details(content)
+                details["link"] = link
+                all_jobs[link] = details
                 old_links.insert(0, link)
             except Exception as e:
                 print(f"Failed to scrape job details from {link}: {e}")
@@ -72,8 +75,7 @@ def get_all_data(old_links=[]):
     return all_jobs, old_links
 
 
-def get_post_detail(content):
-    soup = BeautifulSoup(content, "html.parser")
+def get_post_details(soup):
     job_details = {}
     job_details["Title"] = soup.find("h1").text.strip() if soup.find("h1") else "N/A"
     job_details["Company"] = (
@@ -81,7 +83,7 @@ def get_post_detail(content):
         if soup.find("p", class_="company")
         else "N/A"
     )
-    job_details["Location"] = (
+    job_details["Workplace"] = (
         soup.find("span").text.strip() if soup.find("span") else "N/A"
     )
     job_details["Description"] = (
@@ -89,12 +91,14 @@ def get_post_detail(content):
         if soup.find("section", class_="content")
         else "N/A"
     )
-
-    date_badge = soup.find("ul", class_="tags")
-    date_ = date_badge.text.strip().split("\n")[0] if date_badge else "N/A"
-    if date_ != "N/A":
-        job_details["expiration_date"] = format_date(date_)
-    else:
-        job_details["expiration_date"] = date_
-
+    try:
+        date_badge = str(soup.find("span", class_="badge badge-r badge-s").text)
+        # date_ = date_badge.text.strip().split("\n")[0] if date_badge else "N/A"
+        if date_badge != "N/A":
+            job_details["expiration_date"] = format_date(date_badge)
+        else:
+            job_details["expiration_date"] = date_badge
+    except Exception as e:
+        print(f"Failed to get expiration date: {e}")
+        job_details["expiration_date"] = "N/A"
     return job_details

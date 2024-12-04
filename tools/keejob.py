@@ -54,21 +54,23 @@ def get_all_data(old_links=[]):
         for link in links:
             if link in old_links:
                 return data, old_links
-            data[link] = get_post_content(url + link)
+            content = get_post_content(url + link)
+            details = get_post_details(content)
+            details["link"] = link
+            data[link] = details
             old_links.insert(0, link)
     return data, old_links
 
 
 def get_post_details(content):
-    content = BeautifulSoup(content, "html.parser")
     details = {}
     block = content.find("div", {"class": "span9 content"}).text
     text = re.sub(r"\t+", "", block)
     text = text.strip().split("\n")
     text = [line for line in text if line != ""]
-    details["company"] = text[0]
-    details["job_title"] = content.find("h2", class_="job-title").text
-    details["description"] = content.find(
+    details["Company"] = text[0]
+    details["Title"] = content.find("h2", class_="job-title").text
+    details["Description"] = content.find(
         "div", class_="block_a span12 no-margin-left"
     ).text
     items = content.find_all("div", class_="meta")
@@ -79,9 +81,9 @@ def get_post_details(content):
         value = re.sub(r"[\s\n\t]+", " ", value).strip()
         data[label] = value
     details["expiration_date"] = convert_date(data["Publiée le"])
-    details["workplace"] = data["Lieu de travail"]
+    details["Workplace"] = data["Lieu de travail"]
     for key, value in data.items():
         if key not in ["Publiée le", "Lieu de travail"]:
-            details["description"] += f"\n{key}: {value}"
+            details["Description"] += f"\n{key}: {value}"
 
     return details

@@ -78,25 +78,26 @@ def main():
             hiInterns_data, hiInterns_old_links_ = hiInterns.get_all_data(
                 hiInterns_old_links_
             )
-            for link, body in hiInterns_data.items():
+            for link, details in hiInterns_data.items():
                 producer.produce(
                     "hi_interns",
                     key=link,
-                    value=json.dumps({"link": link, "body": str(body)}),
+                    value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
                 producer.poll(0)
                 time.sleep(1)
+                
 
         keejob_post = keejob.get_latest_post()
         if keejob_latest_post != keejob_post:
             keejob_latest_post = keejob_post
             keejob_data, keejob_old_links_ = keejob.get_all_data(keejob_old_links_)
-            for link, body in keejob_data.items():
+            for link, details in keejob_data.items():
                 producer.produce(
                     "keejob",
                     key=link,
-                    value=json.dumps({"link": link, "body": str(body)}),
+                    value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
                 producer.poll(0)
@@ -106,13 +107,11 @@ def main():
         if farojob_latest_post != farojob_post:
             farojob_latest_post = farojob_post
             farojob_data, farojob_old_links_ = farojob.get_all_data(farojob_old_links_)
-            for link, body in farojob_data.items():
+            for link, details in farojob_data.items():
                 producer.produce(
                     "farojob",
                     key=link,
-                    value=json.dumps(
-                        {"link": link, "body": str(body[0]), "date": str(body[1])}
-                    ),
+                    value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
                 producer.poll(0)
@@ -124,13 +123,14 @@ def main():
             optionCarriere_data, optionCarriere_old_links_ = (
                 optionCarriere.get_all_data(optionCarriere_old_links_)
             )
-            for link, body in optionCarriere_data.items():
+            for link, details in optionCarriere_data.items():
                 producer.produce(
                     "option_carriere",
                     key=link,
-                    value=json.dumps({"link": link, "body": str(body)}),
+                    value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
+                print(details)
                 producer.poll(0)
                 time.sleep(1)
 

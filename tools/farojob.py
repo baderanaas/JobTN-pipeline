@@ -47,17 +47,20 @@ def get_all_data(old_links=[]):
         for link in links:
             if link in old_links:
                 return data, old_links
-            data[link] = get_post_content(link)
+            content, expiration_date = get_post_content(link)
+            details = get_post_details(content)
+            details["expiration_date"] = expiration_date
+            details["link"] = link
+            data[link] = details
             old_links.insert(0, link)
         return data, old_links
 
 
 def get_post_details(content):
-    content = BeautifulSoup(content, "html.parser")
-    paragraphs = content.find_all("p")
     post = {}
-    post["company"] = " ".join(paragraphs[0].text.split()[:-1])
-    post["title"] = paragraphs[1].text
-    post["description"] = " ".join([paragraph.text for paragraph in paragraphs[2:]])
-    post["workplace"] = "Tunisie"
+    paragraphs = content.find_all("p")
+    post["Company"] = " ".join(paragraphs[0].text.split()[:-1])
+    post["Title"] = paragraphs[1].text
+    post["Description"] = " ".join([paragraph.text for paragraph in paragraphs[2:]])
+    post["Workplace"] = "Tunisie"
     return post
