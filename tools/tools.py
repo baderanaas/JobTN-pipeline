@@ -18,36 +18,41 @@ def convert_date(date):
         "vembre": "11",
         "cembre": "12",
     }
-    date = re.sub(r"[^a-z0-9 ]", "", date.lower())
-    day, month, year = date.split()
-    for key in months:
-        if key in month:
-            month = months.get(key)
-            break
-    else:
-        raise ValueError(f"Invalid or unsupported month: {month}")
-    date = f"{year}-{month}-{day}"
-    return (datetime.strptime(date, "%Y-%m-%d") + relativedelta(months=1)).strftime(
-        "%Y-%m-%dT%H:%M:%S.%f%z"
-    )
+    try:
+        date = re.sub(r"[^a-z0-9 ]", "", date.lower())
+        day, month, year = date.split()
+        for key in months:
+            if key in month:
+                month = months.get(key)
+                break
+        else:
+            raise ValueError(f"Invalid or unsupported month: {month}")
+        date = f"{year}-{month}-{day}"
+        return (datetime.strptime(date, "%Y-%m-%d") + relativedelta(months=1)).strftime(
+            "%Y-%m-%dT%H:%M:%S.%f%z"
+        )
+    except Exception:
+        return "0000-00-00T00:00:00"
 
 
 def format_date(date):
-    print(date)
-    value = int(re.sub(r"[^0-9]", "", date))
-    now = datetime.now()
+    try:
+        value = int(re.sub(r"[^0-9]", "", date))
+        now = datetime.now()
 
-    if "jour" in date:
-        new_date = now - relativedelta(days=value)
-    elif "mois" in date:
-        new_date = now - relativedelta(months=value)
-    elif "heure" in date:
-        new_date = now - relativedelta(hours=value)
-    elif "min" in date:
-        new_date = now - relativedelta(minutes=value)
-    else:
-        new_date = now
+        if "jour" in date:
+            new_date = now - relativedelta(days=value)
+        elif "mois" in date:
+            new_date = now - relativedelta(months=value)
+        elif "heure" in date:
+            new_date = now - relativedelta(hours=value)
+        elif "min" in date:
+            new_date = now - relativedelta(minutes=value)
+        else:
+            new_date = now
 
-    new_date_plus_month = new_date + relativedelta(months=1)
+        new_date_plus_month = new_date + relativedelta(months=1)
 
-    return new_date_plus_month.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
+        return new_date_plus_month.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
+    except Exception as e:
+        return "0000-00-00T00:00:00"

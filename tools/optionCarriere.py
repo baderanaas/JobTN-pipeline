@@ -1,3 +1,4 @@
+import re
 import requests
 from bs4 import BeautifulSoup
 
@@ -86,19 +87,17 @@ def get_post_details(soup):
     job_details["Workplace"] = (
         soup.find("span").text.strip() if soup.find("span") else "N/A"
     )
-    job_details["Description"] = (
+    description = (
         soup.find("section", class_="content").text.strip()
         if soup.find("section", class_="content")
         else "N/A"
     )
+    job_details["Description"] = re.sub(r"[\s\n\t\xa0]+", " ", description).strip()
+    
     try:
         date_badge = str(soup.find("span", class_="badge badge-r badge-s").text)
-        # date_ = date_badge.text.strip().split("\n")[0] if date_badge else "N/A"
-        if date_badge != "N/A":
-            job_details["expiration_date"] = format_date(date_badge)
-        else:
-            job_details["expiration_date"] = date_badge
+        job_details["expiration_date"] = format_date(date_badge)
     except Exception as e:
         print(f"Failed to get expiration date: {e}")
-        job_details["expiration_date"] = "N/A"
+        job_details["expiration_date"] = "0000-00-00T00:00:00"
     return job_details

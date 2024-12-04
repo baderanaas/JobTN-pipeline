@@ -87,7 +87,6 @@ def main():
                 )
                 producer.poll(0)
                 time.sleep(1)
-                
 
         keejob_post = keejob.get_latest_post()
         if keejob_latest_post != keejob_post:
@@ -130,7 +129,6 @@ def main():
                     value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
-                print(details)
                 producer.poll(0)
                 time.sleep(1)
 

@@ -78,7 +78,7 @@ def get_post_details(content):
     for meta in items:
         label = meta.find("b").text.strip().replace(":", "")
         value = meta.find("br").next_sibling.strip() if meta.find("br") else ""
-        value = re.sub(r"[\s\n\t]+", " ", value).strip()
+        value = re.sub(r"[\s\n\t\xa0]+", " ", value).strip()
         data[label] = value
     details["expiration_date"] = convert_date(data["Publiée le"])
     details["Workplace"] = data["Lieu de travail"]

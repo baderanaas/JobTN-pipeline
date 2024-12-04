@@ -1,3 +1,4 @@
+import re
 import requests
 from bs4 import BeautifulSoup
 
@@ -72,7 +73,8 @@ def get_post_details(content):
     details["Title"] = content.find(
         "h1", class_="mb-8 text-2xl font-bold lg:text-2xl"
     ).text.strip()
-    details["Description"] = content.find("div", class_="prose text-black").text.strip()
+    description = content.find("div", class_="prose text-black").text.strip()
+    details["Description"] = re.sub(r"[\s\n\t\xa0]+", " ", description).strip()
     details["expiration_date"] = convert_date(
         content.find("p", class_="text-sm text-gray-500 md:hidden")
         .text.strip()

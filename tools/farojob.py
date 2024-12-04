@@ -1,3 +1,4 @@
+import re
 import requests
 from bs4 import BeautifulSoup
 from .tools import convert_date
@@ -61,6 +62,7 @@ def get_post_details(content):
     paragraphs = content.find_all("p")
     post["Company"] = " ".join(paragraphs[0].text.split()[:-1])
     post["Title"] = paragraphs[1].text
-    post["Description"] = " ".join([paragraph.text for paragraph in paragraphs[2:]])
+    description = " ".join([paragraph.text for paragraph in paragraphs[2:]])
+    post["Description"] = re.sub(r"[\s\n\t\xa0]+", " ", description).strip()
     post["Workplace"] = "Tunisie"
     return post
