@@ -70,9 +70,8 @@ def get_post_details(content):
     text = [line for line in text if line != ""]
     details["Company"] = text[0]
     details["Title"] = content.find("h2", class_="job-title").text
-    details["Description"] = content.find(
-        "div", class_="block_a span12 no-margin-left"
-    ).text
+    description = content.find("div", class_="block_a span12 no-margin-left").text
+    details["Description"] = re.sub(r"[\s\n\t\xa0]+", " ", description).strip()
     items = content.find_all("div", class_="meta")
     data = {}
     for meta in items:

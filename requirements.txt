@@ -2,10 +2,14 @@ requests
 beautifulsoup4
 confluent_kafka
 kafka-python
-psycopg2 
 psycopg2-binary
-pyspark==3.4.0
-python-dateutil
+polars
 pandas
+python-dateutil
 pyarrow
 numpy
+pymongo
+openai
+chonkie
+tokenizers
+python-dotenv

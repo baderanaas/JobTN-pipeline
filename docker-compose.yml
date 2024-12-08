@@ -166,8 +166,13 @@ services:
     networks:
       - job-network
   
-
-
+  python-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: python-app
+    networks:
+      - job-network
 networks:
   job-network:
     driver: bridge
