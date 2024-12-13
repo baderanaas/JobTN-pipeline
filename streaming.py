@@ -21,7 +21,7 @@ def main():
     farojob_latest_post = "None"
     optionCarriere_latest_post = "None"
 
-    producer = SerializingProducer({"bootstrap.servers": "localhost:9092"})
+    producer = SerializingProducer({"bootstrap.servers": "broker-flink:29092"})
 
     while True:
         # hiInterns_post = hiInterns.get_latest_post()
@@ -55,7 +55,7 @@ def main():
                     value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
-
+                print("Keejob")
                 producer.poll(0)
                 time.sleep(1)
 
@@ -71,6 +71,7 @@ def main():
                     value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
+                print("Farojob")
 
                 producer.poll(0)
                 time.sleep(1)
@@ -87,6 +88,7 @@ def main():
                     value=json.dumps(details),
                     on_delivery=delivery_report,
                 )
+                print("Option Carriere")
 
                 producer.poll(0)
                 time.sleep(1)
