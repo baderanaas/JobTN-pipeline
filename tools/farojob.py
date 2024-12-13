@@ -1,9 +1,18 @@
 import re
+import pymongo
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
+
 from .tools import convert_date
 
 url = "https://www.farojob.net/jobs/?s&type&paged="
+
+client = pymongo.MongoClient("mongodb://host.docker.internal:27017/")
+# client = pymongo.MongoClient("mongodb://localhost:27017/")
+db = client["embedding_db"]
+
+job_embeddings_collection = db["job_embeddings"]
 
 
 def get_number_of_pages():
@@ -39,6 +48,8 @@ def get_post_content(link):
 
 def get_all_data(old_links=[]):
     n = get_number_of_pages()
+    current_date = datetime.now()
+    six_months_ago = current_date - timedelta(days=180)
     # for i in range(n):
     for i in range(3):
         page_url = f"{url}{i+1}"
@@ -46,15 +57,16 @@ def get_all_data(old_links=[]):
         data = {}
         links = get_posts_links(page_url)
         for link in links:
-            if link in old_links:
-                return data, old_links
+            if job_embeddings_collection.find_one(
+                {"link": link, "expiration_date": {"$lt": six_months_ago}}
+            ):
+                return data
             content, expiration_date = get_post_content(link)
             details = get_post_details(content)
             details["expiration_date"] = expiration_date
             details["link"] = link
             data[link] = details
-            old_links.insert(0, link)
-        return data, old_links
+        return data
 
 
 def get_post_details(content):

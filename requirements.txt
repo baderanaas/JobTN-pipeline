@@ -13,3 +13,7 @@ openai
 chonkie
 tokenizers
 python-dotenv
+ollama
+streamlit
+PyPDF2
+python-multipart

@@ -1,6 +1,14 @@
 version: '3.8'
 
 services:
+  streaming:
+    build:
+      context: .
+      dockerfile: Dockerfile.streaming
+    container_name: streaming
+    networks:
+      - job-network
+
   zookeeper-flink:
     image: confluentinc/cp-zookeeper:7.4.0
     hostname: zookeeper-flink
@@ -166,13 +174,14 @@ services:
     networks:
       - job-network
   
-  python-app:
+  processing:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: python-app
+      dockerfile: Dockerfile.processing
+    container_name: processing
     networks:
       - job-network
+
 networks:
   job-network:
     driver: bridge

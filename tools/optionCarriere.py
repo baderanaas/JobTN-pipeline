@@ -1,10 +1,18 @@
 import re
+import pymongo
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 
 from .tools import format_date
 
 url = "https://www.optioncarriere.tn/emploi?s=&l="
+
+client = pymongo.MongoClient("mongodb://host.docker.internal:27017/")
+# client = pymongo.MongoClient("mongodb://localhost:27017/")
+db = client["embedding_db"]
+
+job_embeddings_collection = db["job_embeddings"]
 
 
 def get_latest_post():
@@ -35,6 +43,8 @@ def get_post_content(link):
 
 def get_all_data(old_links=[]):
     all_jobs = {}
+    current_date = datetime.now()
+    six_months_ago = current_date - timedelta(days=180)
     current_page = 1
     base_url = url
 
@@ -47,8 +57,10 @@ def get_all_data(old_links=[]):
             break
 
         for link in job_links:
-            if link in old_links:
-                return all_jobs, old_links
+            if job_embeddings_collection.find_one(
+                {"link": link, "expiration_date": {"$lt": six_months_ago}}
+            ):
+                return all_jobs
             try:
                 content = get_post_content(link)
                 details = get_post_details(content)
@@ -73,7 +85,7 @@ def get_all_data(old_links=[]):
             print("No more pages found. Ending scraping.")
             break
 
-    return all_jobs, old_links
+    return all_jobs
 
 
 def get_post_details(soup):
@@ -93,7 +105,7 @@ def get_post_details(soup):
         else "N/A"
     )
     job_details["Description"] = re.sub(r"[\s\n\t\xa0]+", " ", description).strip()
-    
+
     try:
         date_badge = str(soup.find("span", class_="badge badge-r badge-s").text)
         job_details["expiration_date"] = format_date(date_badge)
