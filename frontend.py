@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import traceback
 
+
 def main():
     st.title("📄 Resume Job Matcher")
 
@@ -31,9 +32,8 @@ def main():
                 try:
                     # Use full URL with protocol
                     response = requests.post(
-                        "http://127.0.0.1:8000/match-jobs/", 
+                        "http://127.0.0.1:8000/match-jobs/",
                         files=files,
-                        timeout=10  # Add a timeout
                     )
 
                     # Detailed status check
@@ -42,13 +42,11 @@ def main():
 
                         # Display results
                         st.subheader("🎯 Job Matches")
-                        if job_matches:
-                            for match in job_matches:
-                                st.write(match)
-                        else:
-                            st.write("No job matches found.")
+                        st.write(job_matches)
                     else:
-                        st.error(f"Error matching jobs. Status code: {response.status_code}")
+                        st.error(
+                            f"Error matching jobs. Status code: {response.status_code}"
+                        )
                         st.write(f"Response: {response.text}")
 
                 except requests.exceptions.RequestException as e:
@@ -57,6 +55,7 @@ def main():
                 except Exception as e:
                     st.error(f"Unexpected error: {e}")
                     st.write(traceback.format_exc())  # Print full traceback
+
 
 if __name__ == "__main__":
     main()

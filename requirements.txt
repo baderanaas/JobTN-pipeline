@@ -14,6 +14,6 @@ chonkie
 tokenizers
 python-dotenv
 ollama
-streamlit
+streamlit==1.40.0
 PyPDF2
 python-multipart

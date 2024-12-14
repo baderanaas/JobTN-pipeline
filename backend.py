@@ -1,6 +1,8 @@
 import os
-from fastapi import FastAPI, File, UploadFile
+import re
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from io import BytesIO
 import PyPDF2
 import numpy as np
 import ollama
@@ -36,6 +38,8 @@ clientOpenAI = OpenAI(api_key=openai_api_key)
 tokenizer = Tokenizer.from_pretrained("gpt2")
 chunker = TokenChunker(tokenizer)
 
+MAX_FILE_SIZE = 10 * 1024 * 1024
+
 try:
     ollama.pull("llama3.1")
 except Exception as e:
@@ -44,80 +48,12 @@ except Exception as e:
 
 
 def extract_text_from_pdf(pdf_file):
+    print("extract text from pdf file")
     reader = PyPDF2.PdfReader(pdf_file)
     text = ""
     for page in reader.pages:
         text += page.extract_text()
     return text
-
-
-def get_resume_sections(resume):
-    prompt = f"""Parse the following resume into clear, standard sections. Use only the sections that are actually present in the resume. Separate each section with ** and ensure the section names are in all uppercase.
-
-Example 1:
----
-John Smith
-123 Main Street | john.smith@email.com | (555) 123-4567
-
-PROFESSIONAL SUMMARY
-Experienced marketing professional with 5+ years of digital marketing expertise.
-
-WORK EXPERIENCE
-Senior Marketing Specialist, Tech Innovations Inc. (2020-2023)
-- Led digital marketing campaigns
-- Increased online engagement by 40%
-
-EDUCATION
-Bachelor of Science in Marketing, State University, 2019
-
-SKILLS
-- Digital Marketing
-- SEO
-- Social Media Management
----
-Output:
-PROFESSIONAL SUMMARY: Experienced marketing professional with 5+ years of digital marketing expertise.**WORK EXPERIENCE: Senior Marketing Specialist, Tech Innovations Inc. (2020-2023)
-- Led digital marketing campaigns
-- Increased online engagement by 40%**EDUCATION: Bachelor of Science in Marketing, State University, 2019**SKILLS: - Digital Marketing
-- SEO
-- Social Media Management
-
-Example 2:
----
-Jane Doe
-jane.doe@email.com | (555) 987-6543
-
-SUMMARY
-Innovative software engineer with expertise in full-stack development.
-
-TECHNICAL SKILLS
-- Python
-- JavaScript
-- React
-- AWS
-
-PROFESSIONAL EXPERIENCE
-Software Engineer, Tech Solutions LLC (2018-2023)
-- Developed scalable web applications
-- Implemented microservices architecture
-
-CERTIFICATIONS
-AWS Certified Developer
----
-Output:
-SUMMARY: Innovative software engineer with expertise in full-stack development.**TECHNICAL SKILLS: - Python
-- JavaScript
-- React
-- AWS**PROFESSIONAL EXPERIENCE: Software Engineer, Tech Solutions LLC (2018-2023)
-- Developed scalable web applications
-- Implemented microservices architecture**CERTIFICATIONS: AWS Certified Developer
-
-Now, parse the following resume into sections:
-{resume}
-"""
-    response = ollama.generate(model="llama3.1", prompt=prompt)
-
-    return (response.message.content).split("**")
 
 
 def get_ada_embeddings(text: str):
@@ -129,46 +65,52 @@ def get_ada_embeddings(text: str):
     return response
 
 
-def sections_embeddings(sections):
-    embeddings = []
-    for section in sections:
-        chunks = chunker(section)
-        embeddings_list = [get_ada_embeddings(chunk) for chunk in chunks]
-        embeddings.append(np.mean(embeddings_list, axis=0))
-    return np.mean(embeddings, axis=0)
+def sections_top_matches(cv, k=5):
+    print("getting top matches")
 
+    embeddings = get_ada_embeddings(cv)
 
-def get_top_matches(resume_embedding, k=5):
-    resume_magnitude = math.sqrt(sum(x * x for x in resume_embedding))
+    embeddings_magnitude = math.sqrt(sum(x * x for x in embeddings))
+    print("Embeddings magnitude:", embeddings_magnitude)
 
     current_time = datetime.utcnow()
+    current_time = current_time.strftime("%Y-%m-%d")
 
     pipeline = [
         {"$match": {"expiration_date": {"$gt": current_time}}},
         {
             "$addFields": {
                 "dotProduct": {
-                    "$reduce": {
-                        "input": {"$zip": {"inputs": ["$embedding", resume_embedding]}},
-                        "initialValue": 0,
-                        "in": {
-                            "$add": [
-                                "$$value",
-                                {"$multiply": ["$$this[0]", "$$this[1]"]},
+                    "$sum": {
+                        "$map": {
+                            "input": {"$zip": {"inputs": ["$embedding", embeddings]}},
+                            "as": "pair",
+                            "in": {
+                                "$multiply": [
+                                    {"$arrayElemAt": ["$$pair", 0]},
+                                    {"$arrayElemAt": ["$$pair", 1]},
+                                ]
+                            },
+                        }
+                    }
+                },
+                "cosineSimilarity": {
+                    "$cond": {
+                        "if": {
+                            "$and": [
+                                {"$gt": ["$magnitudeJob", 0]},
+                                {"$gt": [embeddings_magnitude, 0]},
                             ]
                         },
+                        "then": {
+                            "$divide": [
+                                "$dotProduct",
+                                {"$multiply": ["$magnitudeJob", embeddings_magnitude]},
+                            ]
+                        },
+                        "else": 0,
                     }
-                }
-            }
-        },
-        {
-            "$addFields": {
-                "cosineSimilarity": {
-                    "$divide": [
-                        "$dotProduct",
-                        {"$multiply": ["$magnitudeJob", resume_magnitude]},
-                    ]
-                }
+                },
             }
         },
         {
@@ -177,17 +119,19 @@ def get_top_matches(resume_embedding, k=5):
                 "job_string": {
                     "$concat": [
                         "link: ",
-                        "$link",
+                        {"$ifNull": ["$link", "N/A"]},
                         ", company: ",
-                        "$company",
+                        {"$ifNull": ["$company", "N/A"]},
                         ", title: ",
-                        "$title",
+                        {"$ifNull": ["$title", "N/A"]},
                         ", workplace: ",
-                        "$workplace",
+                        {"$ifNull": ["$workplace", "N/A"]},
                         ", expiration_date: ",
                         {"$toString": "$expiration_date"},
                         ", description: ",
-                        "$description",
+                        {"$ifNull": ["$description", "N/A"]},
+                        ", cosineSimilarity: ",
+                        {"$toString": "$cosineSimilarity"},
                     ]
                 },
                 "cosineSimilarity": 1,
@@ -198,17 +142,20 @@ def get_top_matches(resume_embedding, k=5):
     ]
 
     try:
-        top_matches = list(db.collection.aggregate(pipeline))
-        return [match["job_string"] for match in top_matches]
+        matches = list(collection.aggregate(pipeline, allowDiskUse=True))
+        return matches
     except Exception as e:
-        print(f"Error in finding top matches: {e}")
-        return []
+        print(f"Error in finding matches: {e}")
+        import traceback
+
+        traceback.print_exc()
+
+    return []
 
 
 def formulate_response(resume):
-    sections = get_resume_sections(resume)
-    resume_embedding = sections_embeddings(sections)
-    top_matches = get_top_matches(resume_embedding)
+    # sections = get_resume_sections(resume)
+    top_matches = sections_top_matches(resume)
     prompt = f"""You are an expert job matcher and resume analyzer. Your task is to format job match information into a clear, concise response.
 
 For each job match, follow these rules:
@@ -251,28 +198,34 @@ Contact: careers@techinnovate.io
 https://startup.jobs/engineering/456
 
 Now, process the following job match:
+{top_matches}
 """
 
     response = ollama.generate(model="llama3.1", prompt=prompt)
-    return response.message.content
+    return response["response"]
 
 
 @app.post("/match-jobs/")
 async def match_jobs(file: UploadFile = File(...)):
-    # Save the uploaded file temporarily
-    with open("temp_resume.pdf", "wb") as buffer:
-        buffer.write(await file.read())
+    if file.content_type != "application/pdf":
+        raise HTTPException(
+            status_code=400, detail="Invalid file format. Only PDFs are supported."
+        )
 
-    # Extract text from PDF
-    resume_text = extract_text_from_pdf("temp_resume.pdf")
+    if file.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large.")
 
-    # Remove temporary file
-    os.remove("temp_resume.pdf")
+    resume_bytes = BytesIO(await file.read())
+    resume_text = extract_text_from_pdf(resume_bytes)
 
     # Match jobs
-    job_matches = formulate_response(resume_text)
-
-    return {"job_matches": job_matches}
+    try:
+        job_matches = formulate_response(resume_text)
+        return {"job_matches": job_matches}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error processing resume: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
